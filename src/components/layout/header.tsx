@@ -144,7 +144,8 @@ export function Header() {
                 if (category === 'All') {
                   router.push('/products');
                 } else {
-                  router.push(`/products?category=${category.toLowerCase()}`);
+                  const slug = category.toLowerCase().replace(/ & /g, '-and-').replace(/\s+/g, '-');
+                  router.push(`/products?category=${slug}`);
                 }
               }}
               className={`relative whitespace-nowrap px-1 py-1 transition-colors ${activeCategory === category ? 'text-indigo-600' : 'hover:text-indigo-600'}`}

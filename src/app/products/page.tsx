@@ -71,6 +71,14 @@ function ProductsPageContent() {
   const products = (data as { data?: unknown[] })?.data || [];
   const totalItems = (data as { pagination?: { total?: number } })?.pagination?.total || 0;
 
+  console.log("ProductsPage state:", { 
+    searchParams: searchParams.toString(), 
+    isLoading, 
+    isError, 
+    productsLength: products.length,
+    data
+  });
+
   const priceRanges = [
     { label: 'Under ₹500', min: '0', max: '500' },
     { label: '₹500 - ₹1000', min: '500', max: '1000' },
