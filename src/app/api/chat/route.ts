@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGeminiModel } from "@/lib/gemini";
 import { searchProducts, getProductById, compareProducts } from "@/lib/products";
-import { ProductFilters } from "@/lib/products";
+import type { ProductFilters } from "@/types";
 
 export const dynamic = "force-dynamic";
 
