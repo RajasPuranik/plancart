@@ -40,6 +40,7 @@ export function ProductCard({ product, variant = 'grid' }: ProductCardProps) {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (product.stock > 0) {
       addItem({
         productId: product.id,

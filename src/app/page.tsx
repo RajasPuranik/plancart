@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useCartStore } from "@/store";
 import {
   Search,
   Mic,
@@ -102,7 +103,27 @@ const SUGGESTIONS = [
 
 // --- COMPONENTS ---
 
-const ProductCard = ({ product }: { product: any }) => (
+const ProductCard = ({ product }: { product: any }) => {
+  const addItem = useCartStore((state) => state.addItem);
+  
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      productId: String(product.id),
+      variantId: null,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      mrp: product.mrp,
+      maxStock: 10,
+      variantName: null,
+    });
+    // @ts-ignore
+    window.toast?.success(`${product.name} added to cart!`) || alert(`${product.name} added to cart!`);
+  };
+
+  return (
   <div className="group min-w-[280px] md:min-w-[320px] bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col">
     <div className="relative h-64 overflow-hidden bg-slate-50">
       <div className="absolute top-3 right-3 z-10 bg-white/80 backdrop-blur-md p-2 rounded-full cursor-pointer hover:bg-red-50 hover:text-red-500 transition-colors">
@@ -135,20 +156,22 @@ const ProductCard = ({ product }: { product: any }) => (
             ₹{product.mrp.toLocaleString('en-IN')}
           </span>
         </div>
-        <button className="w-full bg-slate-900 hover:bg-primary-600 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors duration-300">
+        <button onClick={handleAddToCart} className="w-full bg-slate-900 hover:bg-primary-600 text-white py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors duration-300">
           <ShoppingCart className="w-4 h-4" />
           Add to Cart
         </button>
       </div>
     </div>
   </div>
-);
+)};
 
 // --- MAIN PAGE ---
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [timeLeft, setTimeLeft] = useState({ h: 14, m: 25, s: 59 });
+  const [proceduralProduct, setProceduralProduct] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -163,6 +186,33 @@ export default function Home() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleProceduralSearch = () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    setProceduralProduct(null);
+    
+    // Procedural generation
+    setTimeout(() => {
+      const hash = searchQuery.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const approxPrice = 500 + (hash % 49500); 
+      const generatedImageUrl = `https://image.pollinations.ai/prompt/high%20quality%20product%20photography%20of%20${encodeURIComponent(searchQuery)}%20white%20background?width=800&height=800&nologo=true`;
+      
+      setProceduralProduct({
+        id: `gen-${Date.now()}`,
+        name: searchQuery,
+        brand: "AI Generated",
+        price: approxPrice,
+        mrp: Math.floor(approxPrice * 1.2),
+        rating: 4.8,
+        reviews: Math.floor(Math.random() * 500) + 10,
+        images: [{ url: generatedImageUrl, alt: searchQuery, isPrimary: true }],
+        stock: 10,
+        discount: 20
+      });
+      setIsSearching(false);
+    }, 1500);
+  };
 
   return (
     <main className="min-h-screen">
@@ -216,6 +266,7 @@ export default function Home() {
               <input
                 type="text"
                 value={searchQuery}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleProceduralSearch(); }}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Tell me what you're looking for..."
                 className="flex-1 bg-transparent border-none outline-none text-slate-900 text-lg py-4 placeholder-slate-400"
@@ -223,8 +274,8 @@ export default function Home() {
               <button className="p-3 text-slate-500 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors mr-2">
                 <Mic className="w-6 h-6" />
               </button>
-              <button className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-full font-semibold transition-colors flex items-center gap-2">
-                Search
+              <button onClick={handleProceduralSearch} disabled={isSearching} className="bg-primary-600 hover:bg-primary-700 disabled:opacity-70 text-white px-8 py-4 rounded-full font-semibold transition-colors flex items-center gap-2">
+                {isSearching ? 'Generating...' : 'Search'}
               </button>
             </div>
             
@@ -233,7 +284,7 @@ export default function Home() {
               {SUGGESTIONS.map((suggestion, idx) => (
                 <button 
                   key={idx}
-                  onClick={() => setSearchQuery(suggestion)}
+                  onClick={() => { setSearchQuery(suggestion); setTimeout(() => handleProceduralSearch(), 100); }}
                   className="bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium transition-all duration-300"
                 >
                   {suggestion}
@@ -241,6 +292,23 @@ export default function Home() {
               ))}
             </div>
           </motion.div>
+
+          {/* AI Generated Product Result */}
+          <AnimatePresence>
+            {proceduralProduct && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mt-12 w-full max-w-md mx-auto"
+              >
+                <h3 className="text-xl font-bold mb-4 text-white">AI Found This For You</h3>
+                <div className="text-left text-slate-900">
+                  <ProductCard product={proceduralProduct} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 

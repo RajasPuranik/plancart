@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, ShoppingCart, Heart, User, Mic, Menu, X, ChevronDown, Globe, 
@@ -15,6 +16,7 @@ const CATEGORIES = [
 ];
 
 export function Header() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   
@@ -101,10 +103,10 @@ export function Header() {
             </button>
 
             {/* Account */}
-            <div className="hidden sm:flex items-center gap-2 cursor-pointer p-2 rounded-full hover:bg-gray-50 text-gray-700 transition-colors">
+            <Link href="/login" className="hidden sm:flex items-center gap-2 cursor-pointer p-2 rounded-full hover:bg-gray-50 text-gray-700 transition-colors">
               <User className="w-5 h-5" />
               <span className="text-sm font-medium hidden lg:block">Login</span>
-            </div>
+            </Link>
 
             {/* Wishlist */}
             <div className="relative p-2 text-gray-600 hover:text-rose-500 hover:bg-gray-50 rounded-full cursor-pointer transition-colors hidden sm:block">
@@ -137,7 +139,14 @@ export function Header() {
           {CATEGORIES.map((category) => (
             <button
               key={category}
-              onClick={() => setActiveCategory(category)}
+              onClick={() => {
+                setActiveCategory(category);
+                if (category === 'All') {
+                  router.push('/products');
+                } else {
+                  router.push(`/products?category=${category.toLowerCase()}`);
+                }
+              }}
               className={`relative whitespace-nowrap px-1 py-1 transition-colors ${activeCategory === category ? 'text-indigo-600' : 'hover:text-indigo-600'}`}
             >
               {category}

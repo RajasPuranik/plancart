@@ -105,18 +105,22 @@ export function AIChatbot() {
       ]);
 
       let productsData: ProductListItem[] | undefined = undefined;
+      let buffer = '';
 
       while (!done) {
         const { value, done: readerDone } = await reader.read();
         done = readerDone;
         if (value) {
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n\n');
+          buffer += decoder.decode(value, { stream: true });
           
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
+          let newlineIndex;
+          while ((newlineIndex = buffer.indexOf('\n\n')) !== -1) {
+            const chunk = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 2);
+            
+            if (chunk.startsWith('data: ')) {
               try {
-                const data = JSON.parse(line.substring(6));
+                const data = JSON.parse(chunk.substring(6));
                 
                 if (data.type === 'text') {
                   setMessages(prev => prev.map(msg => 
@@ -129,12 +133,27 @@ export function AIChatbot() {
                   productsData = data.products;
                 } else if (data.type === 'tool_call' && data.toolName === 'add_to_cart') {
                   // The AI decided to add something to the cart on our behalf
-                  const pId = data.args.productId;
+                  const product = data.product;
                   const qty = data.args.quantity || 1;
-                  // We would ideally fetch the product details here or rely on the UI to do it
-                  toast.success(`Instructed to add product ${pId} (Qty: ${qty}) to cart.`);
                   
-                  // For a complete implementation, we'd send a message back to the AI that it succeeded.
+                  if (product) {
+                    for (let i = 0; i < qty; i++) {
+                       handleAddToCart(product);
+                    }
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === assistantMessageId 
+                        ? { ...msg, content: msg.content + `Added **${product.name}** to your cart! 🛒` }
+                        : msg
+                    ));
+                  } else {
+                    toast.error(`Could not add product ${data.args.productId} to cart.`);
+                    setMessages(prev => prev.map(msg => 
+                      msg.id === assistantMessageId 
+                        ? { ...msg, content: msg.content + `Sorry, I couldn't find that product to add to your cart.` }
+                        : msg
+                    ));
+                  }
+                  
                 } else if (data.type === 'finish') {
                   setMessages(prev => prev.map(msg => 
                     msg.id === assistantMessageId 

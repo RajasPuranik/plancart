@@ -182,12 +182,16 @@ export async function POST(req: NextRequest) {
                 } else if (fn.name === "add_to_cart") {
                   // For add_to_cart, we send an instruction to the client UI to actually add it
                   // because cart state is managed client-side in Zustand
+                  const productId = fn.args.productId as string;
+                  const product = await getProductById(productId);
                   const payload = JSON.stringify({
                     type: "tool_call",
                     toolName: fn.name,
                     args: fn.args,
+                    product: product,
                   });
                   controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
+                  controller.enqueue(encoder.encode(`data: {"type":"finish"}\n\n`));
                   controller.close();
                   return; // End here, the client will send the tool response back
                 } else {
